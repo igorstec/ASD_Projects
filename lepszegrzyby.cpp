@@ -1,15 +1,9 @@
-/**@author Bajtazar Ba jto cki ( b . bajtocki@students . mimuw . edu . pl )
-* @brief Rozwiązanie zadania XYZ * @date 2022 −01 −16 */
 #include <iostream>
-#include <tuple>
 #include <vector>
-#include <math.h>
 #include <map>
-#include <tuple>
-#include <iostream>
 #include <chrono>
 #include <thread>
-#include <csignal> // dla raise()
+
 using namespace std;
 using namespace chrono;
 
@@ -19,96 +13,39 @@ using namespace chrono;
 long long szybkiePotegowanieModulo(long long podstawa, long long wykladnik, long long modulo) {
     podstawa %= modulo;
     long long wynik = 1;
-
     while (wykladnik > 0) {
-        if (wykladnik % 2 == 1) {
+        if (wykladnik & 1) {
             wynik = (wynik * podstawa) % modulo;
         }
-        wykladnik /= 2;
+        wykladnik >>= 1;
         podstawa = (podstawa * podstawa) % modulo;
     }
     return wynik;
 }
 
-vector<int> przesun_z_powtorzeniem(const vector<int> &v, int przesuniecie) {
-    vector<int> wynik(v.size());
+// Funkcja przesuwająca wektor w miejscu (bez kopiowania)
+void przesunWMiejscu(vector<int> &v, int przesuniecie) {
+    if (przesuniecie == 0 || v.empty()) return;
+    int pierwszyElement = v[0];
+    int rozmiar = v.size();
 
-    for (size_t i = 0; i < v.size(); ++i) {
-        if (i < przesuniecie) {
-            // Pierwsze 'przesuniecie' pozycji - powtórz wartość z indeksu 0
-            wynik[i] = v[0];
-        } else {
-            // Pozostałe pozycje - weź wartość z (i - przesuniecie)
-            wynik[i] = v[i - przesuniecie];
-        }
+    for (int i = rozmiar - 1; i >= przesuniecie; --i) {
+        v[i] = v[i - przesuniecie];
     }
-    return wynik;
-}
 
-vector<int> DP(int wyborPrawo, int kolumna, int zebrane_grzyby_w_kolumnie,
-               const int &k, const int &n,
-               const int m, vector<vector<short> > &grzyby, vector<vector<vector<int> > > &zapamietaneStany) {
-    if (kolumna == m - 1) {
-        return przesun_z_powtorzeniem(zapamietaneStany[wyborPrawo][m - 1], zebrane_grzyby_w_kolumnie);
+    for (int i = 0; i < przesuniecie && i < rozmiar; ++i) {
+        v[i] = pierwszyElement;
     }
-    if (wyborPrawo > 0) {
-        short grzyby_nie_liczone = wyborPrawo < n - 1 ? grzyby[wyborPrawo + 1][kolumna] : 0;
-        if (grzyby[wyborPrawo - 1][kolumna] == grzyby_nie_liczone) {
-            zapamietaneStany[wyborPrawo][kolumna] = zapamietaneStany[wyborPrawo - 1][kolumna];
-            //cout<<"To juz bylo"<<endl;
-            return przesun_z_powtorzeniem(zapamietaneStany[wyborPrawo][kolumna], zebrane_grzyby_w_kolumnie);
-        }
-    }
-    int original_kolumn = kolumna;
-    while (kolumna + 2 < m && grzyby[0][kolumna] == 0 && grzyby[0][kolumna + 1] == 0) {
-        //cout<<"Pominieto pusta kolumne: "<<kolumna<<endl;
-        kolumna++;
-    }
-    // cout << "licze: " << wyborPrawo << " : " << kolumna <<endl;
-    // fflush(stdout);
-
-    vector<int> to_return(k + 1, 0);
-    for (int i = 0; i < n; i++) {
-        int nieliczoneGrzyby = max(wyborPrawo, i) < n - 1 ? grzyby[max(wyborPrawo, i) + 1][kolumna] : 0;
-        int nowe_zebrane_grzyby = grzyby[min(wyborPrawo, i)][kolumna] - nieliczoneGrzyby;
-        //cout<<"nowe_grzyby "<<nowe_zebrane_grzyby<<" ";
-        // if(wyborPrawo==1 && kolumna == 4) {
-        //     cout<<"nowegrzyby: "<<nowe_zebrane_grzyby<<endl;
-        // }
-
-
-        vector<int> wynik = wyborPrawo > 0
-                                ? (przesun_z_powtorzeniem(zapamietaneStany[i][kolumna + 1], nowe_zebrane_grzyby))
-                                : DP(i, kolumna + 1, nowe_zebrane_grzyby, k, n, m, grzyby, zapamietaneStany);
-        for (int j = 0; j <= k; j++) {
-            // if(wyborPrawo==1 && kolumna == 4) {
-            //     cout<<"stan: "<<j <<" ";
-            //     for(int pp=0; pp<=k; pp++) {
-            //         cout<<to_return
-            //     }
-            // }
-            to_return[j] = (to_return[j] + wynik[j]) % MOD;
-        }
-    }
-    // cout << "wyliczylem: " << wyborPrawo << " : " << kolumna << endl;
-    // fflush(stdout);
-    zapamietaneStany[wyborPrawo][kolumna] = to_return;
-    if (kolumna != original_kolumn) {
-        zapamietaneStany[wyborPrawo][original_kolumn] = to_return;
-        //cout<<"Przepisuje na kolumne:"<< original_kolumn<<endl;
-    }
-    return przesun_z_powtorzeniem(to_return, zebrane_grzyby_w_kolumnie);
 }
 
 int main() {
-    long long ILOSC_SCIERZEK = 0;
-
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
     int n, m, k, g;
     cin >> n >> m >> k >> g;
 
-    vector zapamietaneStany(n, vector(m, vector<int>(k + 1, -1)));
-
-    vector grzyby(n, vector<short>(m, 0));
+    vector<vector<int> > grzyby(n, vector<int>(m, 0));
 
     for (int i = 0; i < g; i++) {
         int a, b;
@@ -119,31 +56,44 @@ int main() {
             grzyby[j][b]++;
         }
     }
-    int ilePustychKolumn = 0;
+
+    // Liczenie pominiętych kolumn (optymalizacja)
+    int ilePominietychKolumn = 0;
     for (int j = 0; j < m - 2; j++) {
         if (grzyby[0][j] == 0 && grzyby[0][j + 1] == 0) {
-            ilePustychKolumn++;
+            ilePominietychKolumn++;
         }
     }
 
-    vector<int> temp(k + 1, 0);
-    for (int j = min(grzyby[0][m - 1], (short) k); j >= 0; j--) {
-        temp[j] = 1;
+    vector<vector<int> > nastepnaKolumna(n, vector<int>(k + 1, 0));
+    vector<vector<int> > obecnaKolumna(n, vector<int>(k + 1, 0));
+
+    // Pomocnicza tablica do śledzenia przesunięć wynikających z zebranych grzybów
+    vector<int> przesunieciaKolumny(m, 0);
+
+    // KROK 1: Inicjalizacja ostatniej kolumny (m-1)
+    for (int j = min(grzyby[0][m - 1], k); j >= 0; j--) {
+        nastepnaKolumna[0][j] = 1;
     }
-    zapamietaneStany[0][m - 1] = temp;
 
     for (int i = 1; i < n; i++) {
-        zapamietaneStany[i][m - 1] = zapamietaneStany[i - 1][m - 1];
+        nastepnaKolumna[i] = nastepnaKolumna[i - 1];
 
         int ile = grzyby[i][m - 1];
 
         if (ile >= k || grzyby[i - 1][m - 1] == ile) {
             continue;
         }
-        zapamietaneStany[i][m - 1][ile + 1] = 0;
+        nastepnaKolumna[i][ile + 1] = 0;
     }
+    // for(int j=0; j<n; j++) {
+    //     //cout<<"nastepnaKolumna["<< j <<"] = ";
+    //     for(int i=0; i<=k; i++) {
+    //         cout<< nastepnaKolumna[j][i] <<" ";
+    //     }
+    //     cout<<endl;
+    // }
 
-    /*cout grzyby*/
     // for (int i = 0; i < n; i++) {
     //     for (int j = 0; j < m; j++) {
     //         if (i == n - 1)cout << grzyby[i][j] << " ";
@@ -153,25 +103,84 @@ int main() {
     //     cout << endl;
     // }
 
+    // cout<< "Rozpoczynam przetwarzanie kolumn..." << n << m << k << g <<endl;
+    // fflush(stdout);
 
-    ILOSC_SCIERZEK = DP(0, 0, 0, k, n, m, grzyby, zapamietaneStany)[k];
+    // KROK 2: Iteracyjne przetwarzanie od m-2 do 0
+    for (int kolumna = m - 2; kolumna >= 0; kolumna--) {
+        //Optymalizacja pomijania pustych kolumn
+        int faktycznaKolumna = kolumna;
+        while (faktycznaKolumna >= 0 && faktycznaKolumna < m - 2 && grzyby[0][faktycznaKolumna] == 0 && grzyby[0][faktycznaKolumna+1] == 0) {
+            //cout<<"Pomijam kolumne: "<< faktycznaKolumna <<endl;
+            faktycznaKolumna--;
+        }
 
-    /*cout zapamietane grzyby*/
-    // cout << endl;
-    // for (int i = 0; i < n; i++) {
-    //     for (int j = 0; j < m; j++) {
-    //         for (int p = 0; p < k + 1; p++) {
-    //             cout << zapamietaneStany[i][j][p]<< " ";
-    //         }
-    //         cout << " || ";
-    //     }
-    //     cout << endl;
-    // }
-    //cout << endl;
 
-    long long mnoznik = szybkiePotegowanieModulo(n, ilePustychKolumn, MOD);
+
+        // Jeśli pominęliśmy kolumny, kopiujemy wyniki
+        if (faktycznaKolumna != kolumna) {
+            if(faktycznaKolumna < 0) {
+                continue;
+            }
+
+            for (int wyborPrawo = 0; wyborPrawo < n; wyborPrawo++) {
+                obecnaKolumna[wyborPrawo] = nastepnaKolumna[wyborPrawo];
+            }
+            kolumna = faktycznaKolumna;
+        }
+
+        // Przetwarzanie każdego możliwego wyboru wiersza (wyborPrawo)
+        for (int wyborPrawo = 0; wyborPrawo < n; wyborPrawo++) {
+            // Optymalizacja: sprawdzenie czy możemy skopiować z poprzedniego wiersza
+            if (wyborPrawo > 0) {
+                int grzyby_nie_liczone = wyborPrawo < n - 1 ? grzyby[wyborPrawo + 1][kolumna] : 0;
+                if (grzyby[wyborPrawo - 1][kolumna] == grzyby_nie_liczone) {
+                    obecnaKolumna[wyborPrawo] = obecnaKolumna[wyborPrawo - 1];
+                    continue;
+                }
+            }
+
+            // Inicjalizacja wektora wynikowego dla tego stanu
+            fill(obecnaKolumna[wyborPrawo].begin(), obecnaKolumna[wyborPrawo].end(), 0);
+
+            // Iteracja po wszystkich możliwych wyborach w następnej kolumnie
+            for (int i = 0; i < n; i++) {
+                int nieliczoneGrzyby = max(wyborPrawo, i) < n - 1 ? grzyby[max(wyborPrawo, i) + 1][kolumna] : 0;
+                int nowe_zebrane_grzyby = grzyby[min(wyborPrawo, i)][kolumna] - nieliczoneGrzyby;
+
+                // Tworzymy tymczasową kopię do przesunięcia
+                vector<int> wynikZPrzesunieciem = nastepnaKolumna[i];
+                przesunWMiejscu(wynikZPrzesunieciem, nowe_zebrane_grzyby);
+
+                // Akumulacja wyników
+                for (int j = 0; j <= k; j++) {
+                    obecnaKolumna[wyborPrawo][j] = (obecnaKolumna[wyborPrawo][j] + wynikZPrzesunieciem[j]) % MOD;
+                }
+            }
+        }
+
+        // Swap: obecna kolumna staje się następną kolumną dla kolejnej iteracji
+        //cout << "Kolumna: " << kolumna << endl;
+        // for(int j=0; j<n; j++) {
+        //     for(int i=0; i<=k; i++) {
+        //         cout<< obecnaKolumna[j][i] << " ";
+        //     }
+        //     cout<<endl;
+        // }
+        // cout<<endl;
+
+        swap(obecnaKolumna, nastepnaKolumna);
+    }
+
+    // KROK 3: Aplikacja początkowego przesunięcia (zebrane_grzyby_w_kolumnie = 0 dla kolumny 0)
+    // nastepnaKolumna[0] zawiera teraz wynik dla DP(0, 0, ...)
+    int ILOSC_SCIERZEK = nastepnaKolumna[0][k];
+
+    //Mnożenie przez liczbę pominiętych kolumn
+    long long mnoznik = szybkiePotegowanieModulo(n, ilePominietychKolumn, MOD);
     mnoznik = (mnoznik * ILOSC_SCIERZEK) % MOD;
-    cout << mnoznik << endl;
+
+    cout << mnoznik<< '\n';
 
     return 0;
 }
