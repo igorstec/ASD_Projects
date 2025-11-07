@@ -47,19 +47,26 @@ vector<int> przesun_z_powtorzeniem(const vector<int> &v, int przesuniecie) {
 
 vector<int> DP(int wyborPrawo, int kolumna, int zebrane_grzyby_w_kolumnie,
                const int &k, const int &n,
-               const int minKolumna, vector<vector<short> > &grzyby, vector<vector<vector<int> > > &zapamietaneStany) {
-    if (kolumna == minKolumna - 1) {
-        return przesun_z_powtorzeniem(zapamietaneStany[wyborPrawo][minKolumna-1], zebrane_grzyby_w_kolumnie);
+               const int m, vector<vector<short> > &grzyby, vector<vector<vector<int> > > &zapamietaneStany) {
+    if (kolumna == m - 1) {
+        return przesun_z_powtorzeniem(zapamietaneStany[wyborPrawo][m - 1], zebrane_grzyby_w_kolumnie);
     }
-    cout << "licze: " << wyborPrawo << " : " << kolumna << " ";
-    fflush(stdout);
+    if (wyborPrawo > 0) {
+        short grzyby_nie_liczone = wyborPrawo < n - 1 ? grzyby[wyborPrawo + 1][kolumna] : 0;
+        if (grzyby[wyborPrawo - 1][kolumna] == grzyby_nie_liczone) {
+            zapamietaneStany[wyborPrawo][kolumna] = zapamietaneStany[wyborPrawo - 1][kolumna];
+            //cout<<"To juz bylo"<<endl;
+            return przesun_z_powtorzeniem(zapamietaneStany[wyborPrawo][kolumna], zebrane_grzyby_w_kolumnie);
+        }
+    }
     int original_kolumn = kolumna;
-    while (kolumna + 1 < minKolumna && grzyby[0][kolumna] == 0 && grzyby[0][kolumna + 1] == 0) {
+    while (kolumna + 2 < m && grzyby[0][kolumna] == 0 && grzyby[0][kolumna + 1] == 0) {
         //cout<<"Pominieto pusta kolumne: "<<kolumna<<endl;
         kolumna++;
     }
-    cout << "licze: " << wyborPrawo << " : " << kolumna << " ";
-    fflush(stdout);
+    // cout << "licze: " << wyborPrawo << " : " << kolumna <<endl;
+    // fflush(stdout);
+
     vector<int> to_return(k + 1, 0);
     for (int i = 0; i < n; i++) {
         int nieliczoneGrzyby = max(wyborPrawo, i) < n - 1 ? grzyby[max(wyborPrawo, i) + 1][kolumna] : 0;
@@ -72,7 +79,7 @@ vector<int> DP(int wyborPrawo, int kolumna, int zebrane_grzyby_w_kolumnie,
 
         vector<int> wynik = wyborPrawo > 0
                                 ? (przesun_z_powtorzeniem(zapamietaneStany[i][kolumna + 1], nowe_zebrane_grzyby))
-                                : DP(i, kolumna + 1, nowe_zebrane_grzyby, k, n, minKolumna, grzyby, zapamietaneStany);
+                                : DP(i, kolumna + 1, nowe_zebrane_grzyby, k, n, m, grzyby, zapamietaneStany);
         for (int j = 0; j <= k; j++) {
             // if(wyborPrawo==1 && kolumna == 4) {
             //     cout<<"stan: "<<j <<" ";
@@ -83,11 +90,12 @@ vector<int> DP(int wyborPrawo, int kolumna, int zebrane_grzyby_w_kolumnie,
             to_return[j] = (to_return[j] + wynik[j]) % MOD;
         }
     }
-    cout << "wyliczylem: " << wyborPrawo << " : " << kolumna << " ";
-    fflush(stdout);
+    // cout << "wyliczylem: " << wyborPrawo << " : " << kolumna << endl;
+    // fflush(stdout);
     zapamietaneStany[wyborPrawo][kolumna] = to_return;
     if (kolumna != original_kolumn) {
         zapamietaneStany[wyborPrawo][original_kolumn] = to_return;
+        //cout<<"Przepisuje na kolumne:"<< original_kolumn<<endl;
     }
     return przesun_z_powtorzeniem(to_return, zebrane_grzyby_w_kolumnie);
 }
@@ -101,15 +109,12 @@ int main() {
     vector zapamietaneStany(n, vector(m, vector<int>(k + 1, -1)));
 
     vector grzyby(n, vector<short>(m, 0));
-    int minKolumnaBezGrzybaPozniaj= 0;
+
     for (int i = 0; i < g; i++) {
         int a, b;
         cin >> a >> b;
         a--;
         b--;
-        if (b + 2 > minKolumnaBezGrzybaPozniaj) {
-            minKolumnaBezGrzybaPozniaj = b + 2;
-        }
         for (int j = a; j >= 0; j--) {
             grzyby[j][b]++;
         }
@@ -120,56 +125,50 @@ int main() {
             ilePustychKolumn++;
         }
     }
-    if(minKolumnaBezGrzybaPozniaj>=m-1)
-        minKolumnaBezGrzybaPozniaj = m;
 
     vector<int> temp(k + 1, 0);
-    for (int j = grzyby[0][m - 1]; j >= 0; j--) {
+    for (int j = min(grzyby[0][m - 1], (short) k); j >= 0; j--) {
         temp[j] = 1;
     }
     zapamietaneStany[0][m - 1] = temp;
-    zapamietaneStany[0][minKolumnaBezGrzybaPozniaj-1] = temp;
-
 
     for (int i = 1; i < n; i++) {
-        int ile = grzyby[i][m - 1];
         zapamietaneStany[i][m - 1] = zapamietaneStany[i - 1][m - 1];
 
-        if (grzyby[i - 1][m - 1] == ile) {
-            zapamietaneStany[i][minKolumnaBezGrzybaPozniaj-1] = zapamietaneStany[i-1][m-1];
+        int ile = grzyby[i][m - 1];
+
+        if (ile >= k || grzyby[i - 1][m - 1] == ile) {
             continue;
         }
-        zapamietaneStany[i][m - 1][ile] = 0;
-        zapamietaneStany[i][minKolumnaBezGrzybaPozniaj-1] = zapamietaneStany[i][m-1];
+        zapamietaneStany[i][m - 1][ile + 1] = 0;
     }
 
     /*cout grzyby*/
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            if (i == n - 1)cout << grzyby[i][j] << " ";
-            else
-                cout << grzyby[i][j] << " ";
-        }
-        cout << endl;
-    }
-    //- grzyby[i + 1][j]
+    // for (int i = 0; i < n; i++) {
+    //     for (int j = 0; j < m; j++) {
+    //         if (i == n - 1)cout << grzyby[i][j] << " ";
+    //         else
+    //             cout << grzyby[i][j] - grzyby[i + 1][j]<< " ";
+    //     }
+    //     cout << endl;
+    // }
 
 
-    ILOSC_SCIERZEK = DP(0, 0, 0, k, n, minKolumnaBezGrzybaPozniaj, grzyby, zapamietaneStany)[k];
+    ILOSC_SCIERZEK = DP(0, 0, 0, k, n, m, grzyby, zapamietaneStany)[k];
 
     /*cout zapamietane grzyby*/
-     cout << endl;
-     for (int i = 0; i < n; i++) {
-         for (int j = 0; j < m; j++) {
-             for (int p = 0; p < k + 1; p++) {
-                 cout << zapamietaneStany[i][j][p];
-             }
-             cout << " || ";
-         }
-         cout << endl;
-     }
+    // cout << endl;
+    // for (int i = 0; i < n; i++) {
+    //     for (int j = 0; j < m; j++) {
+    //         for (int p = 0; p < k + 1; p++) {
+    //             cout << zapamietaneStany[i][j][p]<< " ";
+    //         }
+    //         cout << " || ";
+    //     }
+    //     cout << endl;
+    // }
+    //cout << endl;
 
-    cout << endl;
     long long mnoznik = szybkiePotegowanieModulo(n, ilePustychKolumn, MOD);
     mnoznik = (mnoznik * ILOSC_SCIERZEK) % MOD;
     cout << mnoznik << endl;
