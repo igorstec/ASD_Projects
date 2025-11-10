@@ -1,57 +1,68 @@
-//
-// Created by Igor Stec on 10/11/2025.
-//
-
 #include <iostream>
 #include <vector>
-#include <cstring>
-#include <algorithm>
-#include <set>
+#include <thread>
 
 using namespace std;
 
 #define MOD 1000000000
 
-int recurency(int index, int remainingK, vector<set<int> > &dp) {
-    if (dp[index].empty() && remainingK > 0) return 0;
-    if (remainingK == 0) return 1;
+class FenwickTree {
+    vector<long long> tree;
+    int n;
 
-    int wynik = 0;
-    for (int next: dp[index]) {
-        wynik = (wynik + recurency(next, remainingK - 1, dp))%MOD;
+public:
+    FenwickTree(int size) : n(size), tree(size + 1, 0) {}
+
+    void update(int idx, long long val) {
+        for (int i = idx; i <= n; i += i & -i) {
+            tree[i] = (tree[i] + val) % MOD;
+        }
     }
-    return wynik % MOD;
-}
 
+    long long query(int idx) {
+        long long sum = 0;
+        for (int i = idx; i > 0; i -= i & -i) {
+            sum = (sum + tree[i]) % MOD;
+        }
+        return sum;
+    }
+
+    long long rangeQuery(int l, int r) {
+        if (l > r) return 0;
+        return (query(r) - query(l - 1) + MOD) % MOD;
+    }
+};
 
 int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+
     int n, k;
     cin >> n >> k;
-    int wynik = 0;
-    vector dp(n, set<int>());
-    vector<int> arr(n);
-    for (int i = 0; i < n; i++) {
-        cin >> arr[i];
+
+    vector<int> a(n + 1);
+    for (int i = 1; i <= n; i++) {
+        cin >> a[i];
     }
-    for (int i = 1; i < n; i++) {
-        for (int j = 0; j < i; j++) {
-            if (arr[j] > arr[i]) {
-                dp[j].insert(i);
+
+    // k drzew Fenwicka - jedno dla każdej długości
+    vector bit(k + 1, FenwickTree(n));
+
+    long long result = 0;
+
+    for (int i = 1; i <= n; i++) {
+        bit[1].update(a[i], 1);
+        for (int len = k; len >= 2; len--) {
+            long long cnt = bit[len - 1].rangeQuery(a[i] + 1, n);
+            bit[len].update(a[i], cnt);
+
+            if (len == k) {
+                result = (result + cnt) % MOD;
             }
         }
     }
-    //cout dp
-    // for (int i = 0; i < n; i++) {
-    //     cout << "dp[" << i << "]: ";
-    //     for (int next: dp[i]) {
-    //         cout << next << " ";
-    //     }
-    //     cout << endl;
-    // }
+    cout << result << "\n";
 
-    for (int i = 0; i < n - k+1; i++) {
-        wynik = (wynik + recurency(i, k-1, dp)) % MOD;
-    }
-    cout << wynik << endl;
     return 0;
 }
