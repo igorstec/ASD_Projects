@@ -37,13 +37,7 @@ int count_lca(int a, int b, vector<vector<int>>& log_fathers, vector<int>& level
         result+= (1 << (int)log2(j));
     }
 
-     // cout << "Po wyrownaniu a: " << a << " b: " << b << endl;
-     // cout << "Poziomy a: " << levels[a] << " b: " << levels[b] << endl;
-     // cout << "Aktualny reasult: " << result << endl;
-    // fflush(stdout);
-    //a i b na tym samym poziomie
     if(a==b) {
-        // cout<<"Znaleziono LCA: "<<a<<endl;
         return result;
     }
 
@@ -51,13 +45,10 @@ int count_lca(int a, int b, vector<vector<int>>& log_fathers, vector<int>& level
     while(log_fathers[a][0]!=log_fathers[b][0]) {
         int search_dist = (int)log_fathers[a].size()-1;
         while(log_fathers[a][search_dist] == log_fathers[b][search_dist]) {
-            search_dist--;
+            search_dist/=2;
         }
         a = log_fathers[a][search_dist];
         b = log_fathers[b][search_dist];
-        // cout<<"Podnosze a do "<<a<<" i b do "<<b<<endl;
-        // fflush(stdout);
-        //cout<<"Znaleziono rozbieznosc na odleglosci "<<search_dist<<endl;
         result += (1 << search_dist)*2;
     }
     result += 2;
@@ -89,7 +80,6 @@ int main() {
     vector<int> levels(n+1, 0);
     // Budowanie tablicy ojców dla każdego wierzchołka gdzie i-ty to ojciec 2^i
     dfs_find_fathers(1, 0, 0, graph, log_fathers, levels);
-
     // Wczytanie q zapytań
     for (int i = 0; i < q; i++) {
         int a, b, c;

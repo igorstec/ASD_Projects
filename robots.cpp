@@ -1,147 +1,92 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-
+#include <climits>
 using namespace std;
 
-const int MAX_N = 200000;
-const int MAX_M = 1e9;
-
 int main() {
-    int n,m;
+    // Fast I/O
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
     cin >> n >> m;
-    vector<int> robots(n);
-    vector<int> dest(n);
+
+    vector<int> x(n), y(n);
+
+    // Wczytaj pozycje robotów
     for (int i = 0; i < n; i++) {
-        cin >> robots[i];
+        cin >> x[i];
     }
+
+    // Wczytaj pozycje celów
     for (int i = 0; i < n; i++) {
-        cin >> dest[i];
+        cin >> y[i];
     }
-    //sort robots and dest
-    sort(robots.begin(), robots.end());
-    sort(dest.begin(), dest.end());
 
-    vector<int> DP(n, 0 );
-    int robot=0;
-    int destination=0;
-    int index_szuk=0;
-    int index=0; //index destynacji
-    int maxDP=0;
-    int result=0;
+    // Sortuj obie tablice
+    sort(x.begin(), x.end());
+    sort(y.begin(), y.end());
 
-    //int bylo=0;
-    //int result0=0;
-    // while(dest[destination]>robots[robot] && robot<n) {
-    //     robot++;
-    // }
-    // robot = robot < n ? robot : 0;
-    // index_szuk = robot;
-    // //cout<< "Starting pair: " << " Dest: " << dest[0] << " Robot: " << robots[index_szuk] << "\n";
-    //
-    //
-    // while(bylo < n) {
-    //     result0+= min(abs(robots[index_szuk] - dest[index]), m - abs(robots[index_szuk] - dest[index]));
-    //             //cout<< " Result before: " << result << "\n";
-    //             index = (index + 1) % n; // kolejna destynacja ktorej trzeba znalezc pare
-    //             index_szuk = (index_szuk + 1) % n; // kolejny robot do parowania
-    //             bylo++;
-    //
-    //             //cout<< " Dest: " << dest[index] << " Robot: " << robots[index_szuk] << " Result after: " << result0 << "\n";
-    //
-    // }
-    // index_szuk = (robot - 1 + n) % n;
-    // bylo=0;
-    // index = 0;
-    // //cout<< "Starting pair reverse: " << " Dest: " << dest[0] << " Robot: " << robots[index_szuk] << "\n";
-    // while(bylo < n) {
-    //     result+= min(abs(robots[index_szuk] - dest[index]), m - abs(robots[index_szuk] - dest[index]));
-    //
-    //             //cout<< " Result before: " << result << "\n";
-    //             index = (index - 1 + n) % n; // kolejna destynacja ktorej trzeba znalezc pare
-    //             index_szuk = (index_szuk - 1 + n) % n; // kolejny robot do parowania
-    //             bylo++;
-    //
-    //             //cout<< " Dest: " << dest[index] << " Robot: " << robots[index_szuk] << " Result after: " << result << "\n";
-    //
-    //
-    // }
-    // //cout<<"Result0: " << result0 << "\n";
-    // //cout<<"Result: " << result << "\n";
-    // cout<<result<<"."<<result0;
-    // result = min(result, result0);
-    // cout<< result << "\n";
-    // return 0;
+    vector<long long> sums(2*n+1, 0);
+    vector<int> z(3*n);
+    vector<int> pierwszy_z_wiekszy_od_x(n);
+    vector<int> pierwszy_x_mniejszy_od_z(3*n);
 
 
 
+    for(int i=0;i<n;i++) {
+        z[i]=y[i]-m; // pelne liczby bez 0
+        z[i+n]=y[i];
+        z[i+2*n]=y[i]+m;
+    }
 
-     // while(true) {
-     //     while(dest[destination]>robots[robot] && robot<n) {
-     //             robot++;
-     //         }
-     //     robot = robot < n ? robot : 0;
-     //     int right_am=0;
-     //     if(destination > robot) {
-     //         right_am = m - dest[destination] + robots[0];
-     //     }else {
-     //         right_am = abs(dest[destination]-robots[robot]);
-     //     }
-     //     int left_am = abs(dest[destination]-robots[(robot-1+n)% n]);
-     //
-     //     DP[destination] = abs(left_am - right_am);
-     //
-     //     // cout<< "Dest: " << dest[destination] << " Robot right: " << robots[robot] << " Robot left: " << robots[(robot-1+n)% n] <<
-     //     //     " Left am: " << left_am << " Right am: " << right_am << " DP: " << DP[destination] << "\n";
-     //
-     //     if(DP[destination]>maxDP) {
-     //         maxDP=DP[destination];
-     //         index=destination;
-     //         if(left_am<right_am) {
-     //             index_szuk = (robot-1+n)% n;
-     //             result= left_am;
-     //         }else {
-     //             index_szuk = robot;
-     //             result= right_am;
-     //         }
-     //     }
-     //     destination++;
-     //     if(destination==n) {
-     //         break;
-     //     }
-     // }
-     // for(int i=0;i<n;i++) {
-     //     cout << DP[i] << " ";
-     // }
-     // cout << "\n";
-     // cout<< maxDP << " " << index << " " << index_szuk << "\n";
-    // int bylo=1;
-    //
-    //
-    //
-    //  if(index>index_szuk) {//jesli destynacja wiekszy index to do przodu od destynacji parujemy
-    //      while(bylo<n) {
-    //          //cout<< " Result before: " << result << "\n";
-    //          index = (index + 1) % n; // kolejna destynacja ktorej trzeba znalezc pare
-    //          index_szuk = (index_szuk + 1) % n; // kolejny robot do parowania
-    //          bylo++;
-    //          result+= min(abs(robots[index_szuk] - dest[index]), m - abs(robots[index_szuk] - dest[index]));
-    //          //cout<< " Dest: " << dest[index] << " Robot: " << robots[index_szuk] << " Result after: " << result << "\n";
-    //      }
-    //  }else {
-    //      while(bylo<n) {
-    //          //cout<< " Result before: " << result << "\n";
-    //          index = (index - 1 + n) % n; // kolejna destynacja ktorej trzeba znalezc pare
-    //          index_szuk = (index_szuk - 1 + n) % n; // kolejny robot do parowania
-    //          bylo++;
-    //          result+= min(abs(robots[index_szuk] - dest[index]), m - abs(robots[index_szuk] - dest[index]));
-    //          //cout<< " Dest: " << dest[index] << " Robot: " << robots[index_szuk] << " Result after: " << result << "\n";
-    //      }
-    //  }
+    int j=n-1;
+    for(int i=0;i<n;i++) { // pierwdzy z wiekszy lub rowny x
+        while(j< 3*n && z[j] <= x[i]) {
+            j++;
+        }
+        pierwszy_z_wiekszy_od_x[i]=j;
+    }
+    j=0;
+    for(int i=n;i<2*n;i++) {
+        while(j < n && z[i] > x[j]) {
+            j++;
+        }
+        pierwszy_x_mniejszy_od_z[i]=j;
+    }
 
 
+    for(int i=0;i<n;i++) {
+        sums[0]+=x[i];
+        sums[pierwszy_z_wiekszy_od_x[i]-i]-=2*x[i];
+    }
 
-    cout<< result << "\n";
+    for(int i=3*n-1;i>=2*n;i--) {
+        sums[i-n+1]+=z[i];
+    }
+    for(int i=2*n-1;i>=n;i--) {
+        sums[i-n+1]-=z[i];
+        sums[i - pierwszy_x_mniejszy_od_z[i] + 1]+=2*z[i];
+        sums[i+1]-=z[i];
+    }
+    for(int i=n-1;i>=0;i--) {
+        //dla akzdego z
+        sums[0]-=z[i];
+        sums[i+1]+=z[i];
+    }
 
+
+    long long min_ans = LLONG_MAX;
+
+    for(int i=0;i<2*n+1;i++) {
+        if(i>0) {
+            sums[i]+=sums[i-1];
+        }
+        if(sums[i]<min_ans) {
+            min_ans=sums[i];
+        }
+    }
+    cout<< min_ans << "\n";
     return 0;
 }
