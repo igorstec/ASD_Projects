@@ -167,11 +167,12 @@ int main() {
         int count = tree.rangeQuery(L, R, time_start - 1, time_end);
         if(count == 0) {
             cout << -1 << " "<<0<<"\n";
-        }
-        for(int idx = time_start-1; idx <= time_end; idx++) {
-            if( stock_indices[idx] >= range_l && stock_indices[idx] <= range_r) {
-                cout << idx+1 << " " << count << "\n";
-                break;
+        }else {
+            for(int idx = time_start-1; idx <= time_end; idx++) {
+                if( stock_indices[idx] >= range_l && stock_indices[idx] <= range_r) {
+                    cout << idx+1 << " " << count << "\n";
+                    break;
+                }
             }
         }
     }
