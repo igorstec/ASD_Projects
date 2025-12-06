@@ -1,141 +1,134 @@
 #include <iostream>
+#include <math.h>
 #include <vector>
-#include math>
+#include <unistd.h>
 
 using namespace std;
 
 struct TreeNode {
-    int sum;
+    int val;
     TreeNode* left;
     TreeNode* right;
 
-    TreeNode(int s = 0) : sum(s), left(nullptr), right(nullptr) {}
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
 };
 
-class PersistentSegmentTree {
-private:
-    vector<TreeNode*> roots_;  // Snapshots at each time point
-    int tree_size_;
+class SumTree {
+    vector<TreeNode*> roots_;
+    int time_;
+    int size_;
 
-    // Recursively update and create new path
-    TreeNode* update(TreeNode* node, int l, int r, int idx) {
-        if (!node) {
-            node = new TreeNode(0);
+    TreeNode* makeTree(int n) {
+        if(n == 0){
+            return nullptr;
         }
-
-        if (l == r) {
-            // Leaf node - increment count
-            auto* new_node = new TreeNode(node->sum + 1);
-            return new_node;
-        }
-
-        auto* new_node = new TreeNode(node->sum);
-        int mid = l + (r - l) / 2;
-
-        if (idx <= mid) {
-            new_node->left = update(node->left, l, mid, idx);
-            new_node->right = node->right;
-        } else {
-            new_node->left = node->left;
-            new_node->right = update(node->right, mid + 1, r, idx);
-        }
-
-        // Propagate sum upwards
-        new_node->sum = 0;
-        if (new_node->left) new_node->sum += new_node->left->sum;
-        if (new_node->right) new_node->sum += new_node->right->sum;
-
-        return new_node;
+        time_=1;
+        size_ = 1 << n;
+        auto* Node = new TreeNode(0);
+        Node->left = makeTree(n-1);
+        Node->right = makeTree(n-1);
+        return std::move(Node);
     }
 
-    // Query sum in range [query_l, query_r] at time snapshot
-    int query(TreeNode* node, int l, int r, int query_l, int query_r) {
-        if (!node || query_l > r || query_r < l) {
-            return 0;
+    TreeNode* updateNode(TreeNode* node, int idx) {
+        if (!node) {
+            return nullptr;
         }
-
-        // Current range is completely inside query range
-        if (query_l <= l && r <= query_r) {
-            return node->sum;
+        auto* newNode = new TreeNode(node->val + 1);
+        if (idx < size_ / 2) {
+            newNode->left = updateNode(node->left, idx);
+            newNode->right = node->right;
+        } else {
+            newNode->left = node->left;
+            newNode->right = updateNode(node->right, idx - size_ / 2);
         }
-
-        int mid = l + (r - l) / 2;
-        int left_sum = query(node->left, l, mid, query_l, query_r);
-        int right_sum = query(node->right, mid + 1, r, query_l, query_r);
-
-        return left_sum + right_sum;
+        return std::move(newNode);
     }
 
 public:
-    // Initialize tree with given max value
-    explicit PersistentSegmentTree(int max_val) : tree_size_(max_val) {
-        // Create initial empty root
-        roots_.push_back(new TreeNode(0));
+    // n is height of the tree
+    explicit SumTree(int n) {
+        auto* root = new TreeNode(0);
+        root->left = makeTree(n-1);
+        root->right = makeTree(n-1);
+        roots_.push_back(std::move(root));
     }
 
-    // Add update at current time point
     void update(int idx) {
-        if (idx < 0 || idx >= tree_size_) {
-            return;  // Out of bounds
+        time_++;
+        auto* Node = new TreeNode(0);
+        if(idx >= size_)
+            return;
+        if(idx >= size_ /2) {
+            Node -> left = roots_.back()->left;
+            Node->right = updateNode(roots_.back()->right, idx - size_/2);
+        }else{
+            Node -> right = roots_.back()->right;
+            Node->left = updateNode(roots_.back()->left, idx);
         }
-        TreeNode* new_root = update(roots_.back(), 0, tree_size_ - 1, idx);
-        roots_.push_back(new_root);
+        roots_.push_back(std::move(Node));
     }
 
-    // Query range [l, r] between time points time_l and time_r (inclusive)
-    // Returns: count of elements in range that were updated between these times
-    int rangeQuery(int l, int r, int time_l, int time_r) {
-        if (time_l < 0 || time_r >= roots_.size() || time_l > time_r) {
-            return 0;
-        }
-        if (l > r || l < 0 || r >= tree_size_) {
+    int rangeQuery(int l, int r, int when_l, int when_r) {
+        if (l > r || when_l >= roots_.size() || when_r >= roots_.size()) {
             return 0;
         }
 
-        // Query difference: state at time_r minus state at time_l
-        int sum_r = query(roots_[time_r], 0, tree_size_ - 1, l, r);
-        int sum_l = query(roots_[time_l], 0, tree_size_ - 1, l, r);
+        TreeNode* node_r = roots_[when_r];
+        TreeNode* node_l = roots_[when_l];
 
-        return sum_r - sum_l;
-    }
+        int sum = 0;
+        int left = 0;
+        int right = size_ - 1;
 
-    // Get current time (number of snapshots - 1)
-    int getCurrentTime() {
-        return roots_.size() - 1;
+        while (node_r && node_l) {
+            if (r < left || l > right) {
+                break;
+            }
+            if (l <= left && right <= r) {
+                sum += node_r->val - node_l->val;
+                break;
+            }
+            int mid = left + (right - left) / 2;
+
+            node_r = node_r->left;
+            node_l = node_l->left;
+            right = mid;
+
+            if (r > mid) {
+                sum += (node_r ? node_r->val : 0) - (node_l ? node_l->val : 0);
+                node_r = roots_[when_r]->right;
+                node_l = roots_[when_l]->right;
+                left = mid + 1;
+                right = size_ - 1;
+            }
+        }
+
+        return sum;
     }
 };
 
-int main() {
+//Offline implementation
+int main(){
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
 
     int n, m;
-    cin >> n >> m;
-
-    // Find the next power of 2 for tree size
-    int tree_size = 1;
-    while (tree_size < n) {
-        tree_size *= 2;
+    cin>>n >> m;
+    vector<int> stock_index(n);
+    SumTree tree = SumTree(log2(n));
+    for(int i=0; i<n; i++){
+        cin>>stock_index[i];
+        tree.update(stock_index[i]);
     }
-
-    PersistentSegmentTree tree(tree_size);
-
-    // Read stock indices and create snapshots
-    for (int i = 0; i < n; i++) {
-        int idx;
-        cin >> idx;
-        tree.update(idx);
-    }
-
-    // Process queries
-    for (int i = 0; i < m; i++) {
-        int time_start, time_end, range_l, range_r;
-        cin >> time_start >> time_end >> range_l >> range_r;
-
-        // Convert to 0-indexed times
-        int count = tree.rangeQuery(range_l, range_r, time_start - 1, time_end - 1);
-
-        cout << count << "\n";
+    //Process data
+    for(int i=0; i<m; i++){
+        int s,e,l,h;
+        cin>>s>>e>>l>>h;
+        int C_query=tree.rangeQuery(l,h, s-1, e);
+        int Q_query=0;
+        //Check C and Q query
+        cout<<Q_query<<" "<<C_query<<"\n";
     }
 
     return 0;
