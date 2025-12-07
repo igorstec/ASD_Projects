@@ -9,30 +9,31 @@ using namespace std;
 
 struct TreeNode {
     int val;
-    TreeNode* left;
-    TreeNode* right;
+    TreeNode *left;
+    TreeNode *right;
 
-    TreeNode(int s = 0) : val(s), left(nullptr), right(nullptr) {}
+    TreeNode(int s = 0) : val(s), left(nullptr), right(nullptr) {
+    }
 };
 
 class PersistentSegmentTree {
 private:
-    vector<TreeNode*> roots_;  // Snapshots at each time point
+    vector<TreeNode *> roots_; // Snapshots at each time point
     int tree_size_;
 
     // Recursively update and create new path
-    TreeNode* update(TreeNode* node, int l, int r, int idx) {
+    TreeNode *update(TreeNode *node, int l, int r, int idx) {
         if (!node) {
             node = new TreeNode(0);
         }
 
         if (l == r) {
             // Leaf node - increment count
-            auto* new_node = new TreeNode(node->val + 1);
+            auto *new_node = new TreeNode(node->val + 1);
             return new_node;
         }
 
-        auto* new_node = new TreeNode(node->val);
+        auto *new_node = new TreeNode(node->val);
         int mid = l + (r - l) / 2;
 
         if (idx <= mid) {
@@ -52,7 +53,7 @@ private:
     }
 
     // Query val in range [query_l, query_r] at time snapshot
-    int query(TreeNode* node, int l, int r, int query_l, int query_r) {
+    int query(TreeNode *node, int l, int r, int query_l, int query_r) {
         if (!node || query_l > r || query_r < l) {
             return 0;
         }
@@ -79,9 +80,9 @@ public:
     // Add update at current time point
     void update(int idx) {
         if (idx < 0 || idx >= tree_size_) {
-            return;  // Out of bounds
+            return; // Out of bounds
         }
-        TreeNode* new_root = update(roots_.back(), 0, tree_size_ - 1, idx);
+        TreeNode *new_root = update(roots_.back(), 0, tree_size_ - 1, idx);
         roots_.push_back(new_root);
     }
 
@@ -116,61 +117,55 @@ class PersistentSegmentIndexTree {
 private:
     int maxval_;
     int tree_size_;
-    vector<TreeNode*> roots_;  // Snapshots at each time point
+    vector<TreeNode *> roots_; // Snapshots at each time point
 
 
-    void build(TreeNode* n,int low,int high)
-    {
-        if (low==high)
-        {
+    void build(TreeNode *n, int low, int high) {
+        if (low == high) {
             n->val = maxval_; // infinity
             return;
         }
-        int mid = (low+high) / 2;
+        int mid = (low + high) / 2;
         n->left = new TreeNode(maxval_);
         n->right = new TreeNode(maxval_);
         build(n->left, low, mid);
-        build(n->right, mid+1, high);
-        n->val = min (n->left->val, n->right->val);
+        build(n->right, mid + 1, high);
+        n->val = min(n->left->val, n->right->val);
     }
+
     /**
  * Upgrades to new Version
  * @param prev : points to node of previous version
  * @param cur  : points to node of current version
  * Time Complexity : O(logn)
  * Space Complexity : O(logn)  */
-    void upgrade(TreeNode* prev, TreeNode* cur, int low, int high,
-                                       int idx, int value)
-    {
+    void upgrade(TreeNode *prev, TreeNode *cur, int low, int high,
+                 int idx, int value) {
         if (idx > high or idx < low or low > high)
             return;
 
-        if (low == high)
-        {
+        if (low == high) {
             // modification in new version
             cur->val = value;
             return;
         }
-        int mid = (low+high) / 2;
-        if (idx <= mid)
-        {
+        int mid = (low + high) / 2;
+        if (idx <= mid) {
             // link to right child of previous version
             cur->right = prev->right;
 
             // create new node in current version
             cur->left = new TreeNode(maxval_);
 
-            upgrade(prev->left,cur->left, low, mid, idx, value);
-        }
-        else
-        {
+            upgrade(prev->left, cur->left, low, mid, idx, value);
+        } else {
             // link to left child of previous version
             cur->left = prev->left;
 
             // create new node for current version
             cur->right = new TreeNode(maxval_);
 
-            upgrade(prev->right, cur->right, mid+1, high, idx, value);
+            upgrade(prev->right, cur->right, mid + 1, high, idx, value);
         }
 
         // calculating data for current version
@@ -179,45 +174,41 @@ private:
         cur->val = min(cur->left->val, cur->right->val);
     }
 
-    int query(TreeNode* n, int low, int high, int l, int r)
-    {
+    int query(TreeNode *n, int low, int high, int l, int r) {
         if (l > high or r < low or low > high)
             return maxval_; // infinity
         if (l <= low and high <= r)
             return n->val;
-        int mid = (low+high) / 2;
-        int p1 = query(n->left,low,mid,l,r);
-        int p2 = query(n->right,mid+1,high,l,r);
+        int mid = (low + high) / 2;
+        int p1 = query(n->left, low, mid, l, r);
+        int p2 = query(n->right, mid + 1, high, l, r);
         return min(p1, p2);
     }
+
 public:
     //size to ile elementow ma przechowywac
-    PersistentSegmentIndexTree(int size, int maxval)
-    {
+    PersistentSegmentIndexTree(int size, int maxval) {
         maxval_ = maxval;
         tree_size_ = size;
-        TreeNode* root = new TreeNode(maxval);
+        TreeNode *root = new TreeNode(maxval);
         build(root, 0, size);
         roots_.push_back(root);
     }
 
-    int query(int l, int r, int time)
-    {
+    int query(int l, int r, int time) {
         if (time < 0 || time >= roots_.size())
             return maxval_; // infinity
-        return query(roots_[time], 0, tree_size_-1, l, r);
+        return query(roots_[time], 0, tree_size_ - 1, l, r);
     }
-    void update(int idx, int value)
-    {
+
+    void update(int idx, int value) {
         if (idx < 0 || idx >= tree_size_)
             return;
-        TreeNode* new_root = new TreeNode(maxval_);
-        upgrade(roots_.back(), new_root, 0, tree_size_-1, idx, value);
+        TreeNode *new_root = new TreeNode(maxval_);
+        upgrade(roots_.back(), new_root, 0, tree_size_ - 1, idx, value);
         roots_.push_back(new_root);
     }
-
 };
-
 
 
 int main() {
@@ -228,7 +219,7 @@ int main() {
     cin >> n >> m;
 
 
-    vector<int>original_value;
+    vector<int> original_value;
 
 
     map<int, int> compress;
@@ -239,7 +230,7 @@ int main() {
         cin >> idx;
         original_value.push_back(idx);
     }
-    vector<int> stock_indices=original_value;
+    vector<int> stock_indices = original_value;
 
     sort(original_value.begin(), original_value.end());
     original_value.erase(unique(original_value.begin(), original_value.end()), original_value.end());
@@ -253,7 +244,7 @@ int main() {
         tree.update(compressed_idx);
     }
     PersistentSegmentIndexTree index_tree(original_value.size(), n);
-    for (int i = n-1; i >=0; i--) {
+    for (int i = n - 1; i >= 0; i--) {
         int compressed_idx = compress[stock_indices[i]];
         index_tree.update(compressed_idx, i);
     }
@@ -263,15 +254,15 @@ int main() {
         int time_start, time_end, range_l, range_r;
         cin >> time_start >> time_end >> range_l >> range_r;
 
-        auto itL = compress.lower_bound(range_l);     // pierwsza wartość >= range_l
-        auto itR = compress.upper_bound(range_r);     // pierwsza wartość > range_r
+        auto itL = compress.lower_bound(range_l); // pierwsza wartość >= range_l
+        auto itR = compress.upper_bound(range_r); // pierwsza wartość > range_r
 
         if (itL == compress.end() || itR == compress.begin()) {
             // brak wartości w [range_l, range_r]
             cout << -1 << " " << 0 << "\n";
             continue;
         }
-        --itR;  // teraz itR wskazuje na ostatnią wartość <= range_r
+        --itR; // teraz itR wskazuje na ostatnią wartość <= range_r
 
         int L = itL->second;
         int R = itR->second;
@@ -281,12 +272,12 @@ int main() {
         }
 
         int count = tree.rangeQuery(L, R, time_start - 1, time_end);
-        if(count == 0) {
-            cout << -1 << " "<<0<<"\n";
-        }else {
+        if (count == 0) {
+            cout << -1 << " " << 0 << "\n";
+        } else {
             //cout<<"Szukam w przedziale: "<<L<<" "<<R<<" i po wprowadzeniu: "<<n - time_start+1<<"\n";
-            int found_index = index_tree.query(L, R, n-time_start+1);
-            cout<< found_index + 1 <<" "<< count << "\n";
+            int found_index = index_tree.query(L, R, n - time_start + 1);
+            cout << found_index + 1 << " " << count << "\n";
         }
     }
 
