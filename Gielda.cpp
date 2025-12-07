@@ -8,11 +8,11 @@
 using namespace std;
 
 struct TreeNode {
-    int sum;
+    int val;
     TreeNode* left;
     TreeNode* right;
 
-    TreeNode(int s = 0) : sum(s), left(nullptr), right(nullptr) {}
+    TreeNode(int s = 0) : val(s), left(nullptr), right(nullptr) {}
 };
 
 class PersistentSegmentTree {
@@ -28,11 +28,11 @@ private:
 
         if (l == r) {
             // Leaf node - increment count
-            auto* new_node = new TreeNode(node->sum + 1);
+            auto* new_node = new TreeNode(node->val + 1);
             return new_node;
         }
 
-        auto* new_node = new TreeNode(node->sum);
+        auto* new_node = new TreeNode(node->val);
         int mid = l + (r - l) / 2;
 
         if (idx <= mid) {
@@ -43,15 +43,15 @@ private:
             new_node->right = update(node->right, mid + 1, r, idx);
         }
 
-        // Propagate sum upwards
-        new_node->sum = 0;
-        if (new_node->left) new_node->sum += new_node->left->sum;
-        if (new_node->right) new_node->sum += new_node->right->sum;
+        // Propagate val upwards
+        new_node->val = 0;
+        if (new_node->left) new_node->val += new_node->left->val;
+        if (new_node->right) new_node->val += new_node->right->val;
 
         return new_node;
     }
 
-    // Query sum in range [query_l, query_r] at time snapshot
+    // Query val in range [query_l, query_r] at time snapshot
     int query(TreeNode* node, int l, int r, int query_l, int query_r) {
         if (!node || query_l > r || query_r < l) {
             return 0;
@@ -59,14 +59,14 @@ private:
 
         // Current range is completely inside query range
         if (query_l <= l && r <= query_r) {
-            return node->sum;
+            return node->val;
         }
 
         int mid = l + (r - l) / 2;
-        int left_sum = query(node->left, l, mid, query_l, query_r);
-        int right_sum = query(node->right, mid + 1, r, query_l, query_r);
+        int left_val = query(node->left, l, mid, query_l, query_r);
+        int right_val = query(node->right, mid + 1, r, query_l, query_r);
 
-        return left_sum + right_sum;
+        return left_val + right_val;
     }
 
 public:
@@ -97,10 +97,10 @@ public:
         }
 
         // Query difference: state at time_r minus state at time_l
-        int sum_r = query(roots_[time_r], 0, tree_size_ - 1, l, r);
-        int sum_l = query(roots_[time_l], 0, tree_size_ - 1, l, r);
+        int val_r = query(roots_[time_r], 0, tree_size_ - 1, l, r);
+        int val_l = query(roots_[time_l], 0, tree_size_ - 1, l, r);
 
-        return sum_r - sum_l;
+        return val_r - val_l;
     }
 
     // Get current time (number of snapshots - 1)
@@ -108,6 +108,117 @@ public:
         return roots_.size() - 1;
     }
 };
+
+// ===================== Persistent Segment Index Tree =================
+// Used to find minimum index in a range at a specific time point
+
+class PersistentSegmentIndexTree {
+private:
+    int maxval_;
+    int tree_size_;
+    vector<TreeNode*> roots_;  // Snapshots at each time point
+
+
+    void build(TreeNode* n,int low,int high)
+    {
+        if (low==high)
+        {
+            n->val = maxval_; // infinity
+            return;
+        }
+        int mid = (low+high) / 2;
+        n->left = new TreeNode(maxval_);
+        n->right = new TreeNode(maxval_);
+        build(n->left, low, mid);
+        build(n->right, mid+1, high);
+        n->val = min (n->left->val, n->right->val);
+    }
+    /**
+ * Upgrades to new Version
+ * @param prev : points to node of previous version
+ * @param cur  : points to node of current version
+ * Time Complexity : O(logn)
+ * Space Complexity : O(logn)  */
+    void upgrade(TreeNode* prev, TreeNode* cur, int low, int high,
+                                       int idx, int value)
+    {
+        if (idx > high or idx < low or low > high)
+            return;
+
+        if (low == high)
+        {
+            // modification in new version
+            cur->val = value;
+            return;
+        }
+        int mid = (low+high) / 2;
+        if (idx <= mid)
+        {
+            // link to right child of previous version
+            cur->right = prev->right;
+
+            // create new node in current version
+            cur->left = new TreeNode(maxval_);
+
+            upgrade(prev->left,cur->left, low, mid, idx, value);
+        }
+        else
+        {
+            // link to left child of previous version
+            cur->left = prev->left;
+
+            // create new node for current version
+            cur->right = new TreeNode(maxval_);
+
+            upgrade(prev->right, cur->right, mid+1, high, idx, value);
+        }
+
+        // calculating data for current version
+        // by combining previous version and current
+        // modification
+        cur->val = min(cur->left->val, cur->right->val);
+    }
+
+    int query(TreeNode* n, int low, int high, int l, int r)
+    {
+        if (l > high or r < low or low > high)
+            return maxval_; // infinity
+        if (l <= low and high <= r)
+            return n->val;
+        int mid = (low+high) / 2;
+        int p1 = query(n->left,low,mid,l,r);
+        int p2 = query(n->right,mid+1,high,l,r);
+        return min(p1, p2);
+    }
+public:
+    //size to ile elementow ma przechowywac
+    PersistentSegmentIndexTree(int size, int maxval)
+    {
+        maxval_ = maxval;
+        tree_size_ = size;
+        TreeNode* root = new TreeNode(maxval);
+        build(root, 0, size);
+        roots_.push_back(root);
+    }
+
+    int query(int l, int r, int time)
+    {
+        if (time < 0 || time >= roots_.size())
+            return maxval_; // infinity
+        return query(roots_[time], 0, tree_size_-1, l, r);
+    }
+    void update(int idx, int value)
+    {
+        if (idx < 0 || idx >= tree_size_)
+            return;
+        TreeNode* new_root = new TreeNode(maxval_);
+        upgrade(roots_.back(), new_root, 0, tree_size_-1, idx, value);
+        roots_.push_back(new_root);
+    }
+
+};
+
+
 
 int main() {
     ios_base::sync_with_stdio(false);
@@ -141,6 +252,11 @@ int main() {
         int compressed_idx = compress[stock_indices[i]];
         tree.update(compressed_idx);
     }
+    PersistentSegmentIndexTree index_tree(original_value.size(), n);
+    for (int i = n-1; i >=0; i--) {
+        int compressed_idx = compress[stock_indices[i]];
+        index_tree.update(compressed_idx, i);
+    }
 
     // Process queries
     for (int i = 0; i < m; i++) {
@@ -168,12 +284,9 @@ int main() {
         if(count == 0) {
             cout << -1 << " "<<0<<"\n";
         }else {
-            for(int idx = time_start-1; idx <= time_end; idx++) {
-                if( stock_indices[idx] >= range_l && stock_indices[idx] <= range_r) {
-                    cout << idx+1 << " " << count << "\n";
-                    break;
-                }
-            }
+            //cout<<"Szukam w przedziale: "<<L<<" "<<R<<" i po wprowadzeniu: "<<n - time_start+1<<"\n";
+            int found_index = index_tree.query(L, R, n-time_start+1);
+            cout<< found_index + 1 <<" "<< count << "\n";
         }
     }
 
