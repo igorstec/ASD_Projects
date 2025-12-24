@@ -6,6 +6,9 @@
 using namespace std;
 
 int main() {
+    cin.tie(nullptr);
+    ios_base::sync_with_stdio(false);
+
     int n, m, k;
     cin >> n >> m >> k;
     vector<pair<int, list<int> > > dependencies(n + 1, {0, list<int>()});
@@ -35,14 +38,13 @@ int main() {
         //cout<<"Taking project "<<current.second<<" with cost "<<-current.first<<endl;
         to_return = max(to_return, -current.first);
         visits_left--;
-        for (int neighbor : dependencies[current.second].second) {
+        for (int neighbor: dependencies[current.second].second) {
             dependencies[neighbor].first--;
             if (dependencies[neighbor].first == 0) {
-                pq.push({-project_cost[neighbor], neighbor});
+                pq.emplace(-project_cost[neighbor], neighbor);
             }
         }
     }
-    cout<<to_return<<endl;
+    cout << to_return << endl;
     return 0;
-
 }
