@@ -29,7 +29,7 @@ int main() {
     int visits_left = k;
     for (int i = 1; i <= n; i++) {
         if (dependencies[i].first == 0) {
-            pq.push({-project_cost[i], i});
+            pq.emplace(-project_cost[i], i);
         }
     }
     while (visits_left > 0 && !pq.empty()) {
