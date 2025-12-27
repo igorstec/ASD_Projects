@@ -10,10 +10,10 @@ int main() {
     cin.tie(nullptr);
     ios_base::sync_with_stdio(false);
     int n, m;
-    int to_return = INT_MAX;
+    long long to_return = LLONG_MAX;
     cin >> n >> m;
-    priority_queue<pair<int,int>> verties_left; // cost to get to a vertix, vertix
-    vector<pair<int, int> > distances(n, {INT_MAX, INT_MAX}); //cost to a from start, cost from a to end
+    priority_queue<pair<long long,int>> verties_left; // cost to get to a vertix, vertix
+    vector<pair<long long, long long> > distances(n, {LLONG_MAX, LLONG_MAX}); //cost to a from start, cost from a to end
     verties_left.emplace(0, 0);
     vector graph(n, vector<pair<int, int> >());
     vector inverted_graph(n, vector<pair<int, int> >());
@@ -27,10 +27,10 @@ int main() {
     distances[0].first = 0;
     while (!verties_left.empty()) {
         int current = verties_left.top().second;
-        int current_cost = -verties_left.top().first;
+        long long current_cost = -verties_left.top().first;
         verties_left.pop();
         for (auto [neighbour, cost]: graph[current]) {
-            int new_cost = current_cost + cost;
+            long long new_cost = current_cost + cost;
             if (new_cost < distances[neighbour].first) {
                 distances[neighbour].first = new_cost;
                 verties_left.emplace(-distances[neighbour].first, neighbour);
@@ -42,10 +42,10 @@ int main() {
     verties_left.emplace(0, n - 1);
     while (!verties_left.empty()) {
         int current = verties_left.top().second;
-        int current_cost = -verties_left.top().first;
+        long long current_cost = -verties_left.top().first;
         verties_left.pop();
         for (auto [neighbour, cost]: inverted_graph[current]) {
-            int new_cost = current_cost + cost;
+            long long new_cost = current_cost + cost;
             if (new_cost < distances[neighbour].second) {
                 distances[neighbour].second = new_cost;
                 verties_left.emplace(-distances[neighbour].second, neighbour);
