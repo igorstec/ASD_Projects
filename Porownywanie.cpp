@@ -21,47 +21,71 @@ vector<ll> p;
 const ll MOD = 1e9 + 7;
 const ll P = 313;
 
-bool is_zblizone(string &s1, string &s2) {
-    bool to_return = false;
-    if (s1 == s2) return true;
-    int s1l = static_cast<int>(s1.size()), s2l = static_cast<int>(s2.size());
-    if (std::abs(s1l - s2l) >= 2)
-        return false;
-    if (s1l == s2l) {
-        for (int i = 0; i < s1l; i++) {
-            if (s1[i] != s2[i]) {
-                if (to_return == false) {
-                    to_return = true;
-                } else {
-                    return false;
-                }
-            }
+// H(L, R) = (h[R] - h[L-1] * P^(R-L+1)) % MOD
+ll getHash(int L, int R) {
+    if (L > R) return 0;
+    ll res = (h[R] - (h[L - 1] * p[R - L + 1]) % MOD) % MOD;
+    if (res < 0) res += MOD;
+    return res;
+}
+
+int getLCP(int start1, int start2, int max_len) {
+    int left = 0, right = max_len;
+    int res = 0;
+
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        if (mid == 0) {
+            left = 1;
+            continue;
         }
-        return to_return;
+
+        if (getHash(start1, start1 + mid - 1) == getHash(start2, start2 + mid - 1)) {
+            res = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
     }
-    if (s1l < s2l) {
-        swap(s1, s2);
+    return res;
+}
+
+bool solve_query(int a, int b, int c, int d) {
+    int len1 = b - a + 1;
+    int len2 = d - c + 1;
+
+    if (std::abs(len1 - len2) >= 2) return false;
+
+    if (len1 == len2 && getHash(a, b) == getHash(c, d)) return true;
+
+    int common = getLCP(a, c, min(len1, len2));
+
+    if (len1 == len2) {
+        int remaining = len1 - common - 1;
+        if (remaining == 0) return true;
+
+        if (getHash(a + common + 1, b) == getHash(c + common + 1, d)) {
+            return true;
+        }
+    } else {
+        int long_start = (len1 > len2) ? a : c;
+        int long_end = (len1 > len2) ? b : d;
+        int short_start = (len1 > len2) ? c : a;
+        int short_end = (len1 > len2) ? d : b;
+
+        if (common == min(len1, len2)) return true;
+
+        if (getHash(long_start + common + 1, long_end) == getHash(short_start + common, short_end)) {
+            return true;
+        }
     }
-    //s1 wiekszy
-    int i = 0;
-    while (i < s2l && s1[i] == s2[i]) {
-        i++;
-    }
-    if (i == s2l)
-        return true;
-    string sub1 = s1.substr(i + 1, s1l - i - 1);
-    string sub2 = s2.substr(i, s2l - i);
-    if (sub1 == sub2) { return true; }
+
     return false;
 }
 
-bool solve_query(int i, int b, int c, int d) {
-    return false;
-};
-
 int main() {
-    // Optymalizacja I/O
     ios_base::sync_with_stdio(false);
+    cout.tie(nullptr);
     cin.tie(nullptr);
 
     int n, m;
@@ -69,7 +93,7 @@ int main() {
 
     string s;
     cin >> s;
-    
+
     h.resize(n + 1);
     p.resize(n + 1);
 
