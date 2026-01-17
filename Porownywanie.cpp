@@ -2,6 +2,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <vector>
+#include <string>
+#include <cstring>
 using namespace std;
 
 // Rabin Karp Algorithm
